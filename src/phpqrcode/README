@@ -23,6 +23,17 @@ $back_color = 0xFFFF00;
 $fore_color = 0xFF00FF;
 QRcode::png('some othertext 1234', false, 'h', 20, 1, false, $back_color, $fore_color);
 
+== RAW DATA RETURN ==
+All encode methods (png / text / eps / svg / raw) take an extra bool $rawData as the
+last parameter. When it is true, nothing is written to disk, no header is sent and
+nothing is echoed: the encoded content is returned to the caller instead.
+example :
+$png = QRcode::png('some text', false, 'L', 4, 4, false, 0xFFFFFF, 0x000000, true);
+$jpg = QRcode::jpg('some text', false, 'L', 4, 4, 85, true);
+$svg = QRcode::svg('some text', false, 'L', 4, 4, false, 0xFFFFFF, 0x000000, true);
+$eps = QRcode::eps('some text', false, 'L', 4, 4, false, 0xFFFFFF, 0x000000, false, true);
+$tab = QRcode::text('some text', false, 'L', 4, 4, true);
+
 
 Copyright (C) 2012 by Alexandre Assouad 
 

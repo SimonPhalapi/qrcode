@@ -27,11 +27,18 @@
     class QRimage {
 
         //----------------------------------------------------------------------
-        public static function png($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color = 0xFFFFFF, $fore_color = 0x000000)
+        public static function png($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color = 0xFFFFFF, $fore_color = 0x000000, $rawData = false)
         {
             $image = self::image($frame, $pixelPerPoint, $outerFrame, $back_color, $fore_color);
 
-            if ($filename === false) {
+            $content = null;
+
+            if ($rawData === true) {
+                // 不写文件、不发 header、不 echo，直接返回图片二进制内容
+                ob_start();
+                ImagePng($image);
+                $content = ob_get_clean();
+            } else if ($filename === false) {
                 Header("Content-type: image/png");
                 ImagePng($image);
             } else {
@@ -47,14 +54,23 @@
             if (version_compare(PHP_VERSION, '8.0.0', '<')) {
                 ImageDestroy($image);
             }
+
+            return $content;
         }
 
         //----------------------------------------------------------------------
-        public static function jpg($frame, $filename = false, $pixelPerPoint = 8, $outerFrame = 4, $q = 85)
+        public static function jpg($frame, $filename = false, $pixelPerPoint = 8, $outerFrame = 4, $q = 85, $rawData = false)
         {
             $image = self::image($frame, $pixelPerPoint, $outerFrame);
 
-            if ($filename === false) {
+            $content = null;
+
+            if ($rawData === true) {
+                // 不写文件、不发 header、不 echo，直接返回图片二进制内容
+                ob_start();
+                ImageJpeg($image, null, $q);
+                $content = ob_get_clean();
+            } else if ($filename === false) {
                 Header("Content-type: image/jpeg");
                 ImageJpeg($image, null, $q);
             } else {
@@ -64,6 +80,8 @@
             if (version_compare(PHP_VERSION, '8.0.0', '<')) {
                 ImageDestroy($image);
             }
+
+            return $content;
         }
 
         //----------------------------------------------------------------------

@@ -15,8 +15,13 @@ class_alias('\QRcode', '\PhalApi\QrCode\QrCode');
 
 class Lite
 {
-    public function png($text, $outfile = false, $level = 'L', $size = 3, $margin = 4, $saveandprint = false)
+    public function png($text, $outfile = false, $level = 'L', $size = 3, $margin = 4, $saveandprint = false, $rawData = false)
     {
-        return \QRcode::png($text, $outfile, $level, $size, $margin, $saveandprint);
+        return \QRcode::png($text, $outfile, $level, $size, $margin, $saveandprint, 0xFFFFFF, 0x000000, $rawData);
+    }
+
+    public function jpg($text, $outfile = false, $level = 'L', $size = 3, $margin = 4, $q = 85, $rawData = false)
+    {
+        return \QRcode::jpg($text, $outfile, $level, $size, $margin, $q, $rawData);
     }
 }

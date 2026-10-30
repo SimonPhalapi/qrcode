@@ -27,10 +27,15 @@
     class QRvect {
     
         //----------------------------------------------------------------------
-        public static function eps($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color = 0xFFFFFF, $fore_color = 0x000000, $cmyk = false) 
+        public static function eps($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color = 0xFFFFFF, $fore_color = 0x000000, $cmyk = false, $rawData = false) 
         {
             $vect = self::vectEPS($frame, $pixelPerPoint, $outerFrame, $back_color, $fore_color, $cmyk);
             
+            if ($rawData === true) {
+                // 不写文件、不发 header、不 echo，直接返回 EPS 内容
+                return $vect;
+            }
+
             if ($filename === false) {
                 header("Content-Type: application/postscript");
                 header('Content-Disposition: filename="qrcode.eps"');
@@ -137,10 +142,15 @@
         }
         
         //----------------------------------------------------------------------
-        public static function svg($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color = 0xFFFFFF, $fore_color = 0x000000) 
+        public static function svg($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color = 0xFFFFFF, $fore_color = 0x000000, $rawData = false) 
         {
             $vect = self::vectSVG($frame, $pixelPerPoint, $outerFrame, $back_color, $fore_color);
             
+            if ($rawData === true) {
+                // 不写文件、不发 header、不 echo，直接返回 SVG 内容
+                return $vect;
+            }
+
             if ($filename === false) {
                 header("Content-Type: image/svg+xml");
                 //header('Content-Disposition: attachment, filename="qrcode.svg"');

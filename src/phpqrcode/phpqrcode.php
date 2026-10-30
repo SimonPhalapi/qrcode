@@ -952,11 +952,18 @@
     class QRimage {
 
         //----------------------------------------------------------------------
-        public static function png($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color, $fore_color)
+        public static function png($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color = 0xFFFFFF, $fore_color = 0x000000, $rawData = false)
         {
             $image = self::image($frame, $pixelPerPoint, $outerFrame, $back_color, $fore_color);
 
-            if ($filename === false) {
+            $content = null;
+
+            if ($rawData === true) {
+                // 不写文件、不发 header、不 echo，直接返回图片二进制内容
+                ob_start();
+                ImagePng($image);
+                $content = ob_get_clean();
+            } else if ($filename === false) {
                 Header("Content-type: image/png");
                 ImagePng($image);
             } else {
@@ -972,14 +979,23 @@
             if (version_compare(PHP_VERSION, '8.0.0', '<')) {
                 ImageDestroy($image);
             }
+
+            return $content;
         }
 
         //----------------------------------------------------------------------
-        public static function jpg($frame, $filename = false, $pixelPerPoint = 8, $outerFrame = 4, $q = 85)
+        public static function jpg($frame, $filename = false, $pixelPerPoint = 8, $outerFrame = 4, $q = 85, $rawData = false)
         {
             $image = self::image($frame, $pixelPerPoint, $outerFrame);
 
-            if ($filename === false) {
+            $content = null;
+
+            if ($rawData === true) {
+                // 不写文件、不发 header、不 echo，直接返回图片二进制内容
+                ob_start();
+                ImageJpeg($image, null, $q);
+                $content = ob_get_clean();
+            } else if ($filename === false) {
                 Header("Content-type: image/jpeg");
                 ImageJpeg($image, null, $q);
             } else {
@@ -989,6 +1005,8 @@
             if (version_compare(PHP_VERSION, '8.0.0', '<')) {
                 ImageDestroy($image);
             }
+
+            return $content;
         }
 
         //----------------------------------------------------------------------
@@ -3118,38 +3136,45 @@
         }
         
         //----------------------------------------------------------------------
-        public static function png($text, $outfile = false, $level = QR_ECLEVEL_L, $size = 3, $margin = 4, $saveandprint=false, $back_color = 0xFFFFFF, $fore_color = 0x000000) 
+        public static function png($text, $outfile = false, $level = QR_ECLEVEL_L, $size = 3, $margin = 4, $saveandprint=false, $back_color = 0xFFFFFF, $fore_color = 0x000000, $rawData = false) 
         {
             $enc = QRencode::factory($level, $size, $margin, $back_color, $fore_color);
-            return $enc->encodePNG($text, $outfile, $saveandprint=false);
+            return $enc->encodePNG($text, $outfile, $saveandprint=false, $rawData);
         }
 
         //----------------------------------------------------------------------
-        public static function text($text, $outfile = false, $level = QR_ECLEVEL_L, $size = 3, $margin = 4) 
+        public static function jpg($text, $outfile = false, $level = QR_ECLEVEL_L, $size = 3, $margin = 4, $q = 85, $rawData = false) 
         {
             $enc = QRencode::factory($level, $size, $margin);
-            return $enc->encode($text, $outfile);
+            return $enc->encodeJPG($text, $outfile, $q, $rawData);
+        }
+
+        //----------------------------------------------------------------------
+        public static function text($text, $outfile = false, $level = QR_ECLEVEL_L, $size = 3, $margin = 4, $rawData = false) 
+        {
+            $enc = QRencode::factory($level, $size, $margin);
+            return $enc->encode($text, $rawData === true ? false : $outfile);
         }
         
         //----------------------------------------------------------------------
-        public static function eps($text, $outfile = false, $level = QR_ECLEVEL_L, $size = 3, $margin = 4, $saveandprint=false, $back_color = 0xFFFFFF, $fore_color = 0x000000, $cmyk = false) 
+        public static function eps($text, $outfile = false, $level = QR_ECLEVEL_L, $size = 3, $margin = 4, $saveandprint=false, $back_color = 0xFFFFFF, $fore_color = 0x000000, $cmyk = false, $rawData = false) 
         {
             $enc = QRencode::factory($level, $size, $margin, $back_color, $fore_color, $cmyk);
-            return $enc->encodeEPS($text, $outfile, $saveandprint=false);
+            return $enc->encodeEPS($text, $outfile, $saveandprint=false, $rawData);
         }
         
         //----------------------------------------------------------------------
-        public static function svg($text, $outfile = false, $level = QR_ECLEVEL_L, $size = 3, $margin = 4, $saveandprint=false, $back_color = 0xFFFFFF, $fore_color = 0x000000)
+        public static function svg($text, $outfile = false, $level = QR_ECLEVEL_L, $size = 3, $margin = 4, $saveandprint=false, $back_color = 0xFFFFFF, $fore_color = 0x000000, $rawData = false)
         {
             $enc = QRencode::factory($level, $size, $margin, $back_color, $fore_color);
-            return $enc->encodeSVG($text, $outfile, $saveandprint=false);
+            return $enc->encodeSVG($text, $outfile, $saveandprint=false, $rawData);
         }
 
         //----------------------------------------------------------------------
-        public static function raw($text, $outfile = false, $level = QR_ECLEVEL_L, $size = 3, $margin = 4) 
+        public static function raw($text, $outfile = false, $level = QR_ECLEVEL_L, $size = 3, $margin = 4, $rawData = false) 
         {
             $enc = QRencode::factory($level, $size, $margin);
-            return $enc->encodeRAW($text, $outfile);
+            return $enc->encodeRAW($text, $rawData === true ? false : $outfile);
         }
     }
     
@@ -3245,6 +3270,7 @@
     
     //##########################################################################    
     
+    #[\AllowDynamicProperties]
     class QRencode {
     
         public $casesensitive = true;
@@ -3334,7 +3360,7 @@
         }
         
         //----------------------------------------------------------------------
-        public function encodePNG($intext, $outfile = false,$saveandprint=false) 
+        public function encodePNG($intext, $outfile = false,$saveandprint=false,$rawData=false) 
         {
             try {
             
@@ -3343,22 +3369,24 @@
                 $err = ob_get_contents();
                 ob_end_clean();
                 
-                if ($err != '')
+                if (!$rawData && $err != '')
                     QRtools::log($outfile, $err);
                 
                 $maxSize = (int)(QR_PNG_MAXIMUM_SIZE / (count($tab)+2*$this->margin));
                 
-                QRimage::png($tab, $outfile, min(max(1, $this->size), $maxSize), $this->margin,$saveandprint, $this->back_color, $this->fore_color);
+                return QRimage::png($tab, $outfile, min(max(1, $this->size), $maxSize), $this->margin,$saveandprint, $this->back_color, $this->fore_color, $rawData);
             
             } catch (Exception $e) {
             
-                QRtools::log($outfile, $e->getMessage());
-            
+                if (!$rawData)
+                    QRtools::log($outfile, $e->getMessage());
+                
+                return null;
             }
         }
         
         //----------------------------------------------------------------------
-        public function encodeEPS($intext, $outfile = false,$saveandprint=false) 
+        public function encodeJPG($intext, $outfile = false, $q = 85, $rawData = false) 
         {
             try {
             
@@ -3367,22 +3395,50 @@
                 $err = ob_get_contents();
                 ob_end_clean();
                 
-                if ($err != '')
+                if (!$rawData && $err != '')
                     QRtools::log($outfile, $err);
                 
                 $maxSize = (int)(QR_PNG_MAXIMUM_SIZE / (count($tab)+2*$this->margin));
                 
-                QRvect::eps($tab, $outfile, min(max(1, $this->size), $maxSize), $this->margin,$saveandprint, $this->back_color, $this->fore_color, $this->cmyk);
+                return QRimage::jpg($tab, $outfile, min(max(1, $this->size), $maxSize), $this->margin, $q, $rawData);
             
             } catch (Exception $e) {
             
-                QRtools::log($outfile, $e->getMessage());
+                if (!$rawData)
+                    QRtools::log($outfile, $e->getMessage());
+                
+                return null;
+            }
+        }
+        
+        //----------------------------------------------------------------------
+        public function encodeEPS($intext, $outfile = false,$saveandprint=false,$rawData=false) 
+        {
+            try {
             
+                ob_start();
+                $tab = $this->encode($intext);
+                $err = ob_get_contents();
+                ob_end_clean();
+                
+                if (!$rawData && $err != '')
+                    QRtools::log($outfile, $err);
+                
+                $maxSize = (int)(QR_PNG_MAXIMUM_SIZE / (count($tab)+2*$this->margin));
+                
+                return QRvect::eps($tab, $outfile, min(max(1, $this->size), $maxSize), $this->margin,$saveandprint, $this->back_color, $this->fore_color, $this->cmyk, $rawData);
+            
+            } catch (Exception $e) {
+            
+                if (!$rawData)
+                    QRtools::log($outfile, $e->getMessage());
+                
+                return null;
             }
         }
 
         //----------------------------------------------------------------------
-        public function encodeSVG($intext, $outfile = false,$saveandprint=false) 
+        public function encodeSVG($intext, $outfile = false,$saveandprint=false,$rawData=false) 
         {
             try {
             
@@ -3391,17 +3447,19 @@
                 $err = ob_get_contents();
                 ob_end_clean();
                 
-                if ($err != '')
+                if (!$rawData && $err != '')
                     QRtools::log($outfile, $err);
                 
                 $maxSize = (int)(QR_PNG_MAXIMUM_SIZE / (count($tab)+2*$this->margin));
 
-                QRvect::svg($tab, $outfile, min(max(1, $this->size), $maxSize), $this->margin,$saveandprint, $this->back_color, $this->fore_color);
+                return QRvect::svg($tab, $outfile, min(max(1, $this->size), $maxSize), $this->margin,$saveandprint, $this->back_color, $this->fore_color, $rawData);
             
             } catch (Exception $e) {
             
-                QRtools::log($outfile, $e->getMessage());
-            
+                if (!$rawData)
+                    QRtools::log($outfile, $e->getMessage());
+                
+                return null;
             }
         }
     }
@@ -3442,10 +3500,15 @@
     class QRvect {
     
         //----------------------------------------------------------------------
-        public static function eps($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color = 0xFFFFFF, $fore_color = 0x000000, $cmyk = false) 
+        public static function eps($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color = 0xFFFFFF, $fore_color = 0x000000, $cmyk = false, $rawData = false) 
         {
             $vect = self::vectEPS($frame, $pixelPerPoint, $outerFrame, $back_color, $fore_color, $cmyk);
             
+            if ($rawData === true) {
+                // 不写文件、不发 header、不 echo，直接返回 EPS 内容
+                return $vect;
+            }
+
             if ($filename === false) {
                 header("Content-Type: application/postscript");
                 header('Content-Disposition: filename="qrcode.eps"');
@@ -3552,10 +3615,15 @@
         }
         
         //----------------------------------------------------------------------
-        public static function svg($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color, $fore_color) 
+        public static function svg($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color = 0xFFFFFF, $fore_color = 0x000000, $rawData = false) 
         {
             $vect = self::vectSVG($frame, $pixelPerPoint, $outerFrame, $back_color, $fore_color);
             
+            if ($rawData === true) {
+                // 不写文件、不发 header、不 echo，直接返回 SVG 内容
+                return $vect;
+            }
+
             if ($filename === false) {
                 header("Content-Type: image/svg+xml");
                 //header('Content-Disposition: attachment, filename="qrcode.svg"');
