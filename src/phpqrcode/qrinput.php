@@ -398,7 +398,7 @@
         //----------------------------------------------------------------------
         public static function estimateBitsModeNum($size)
         {
-            $w = (int)$size / 3;
+            $w = (int)($size / 3);
             $bits = $w * 10;
             
             switch($size - $w * 3) {
